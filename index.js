@@ -34,6 +34,15 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/querys/recent", async (req, res) => {
+      const recentQuerys = await queryCollection
+        .find()
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .toArray();
+      res.send(recentQuerys);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
