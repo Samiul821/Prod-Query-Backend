@@ -86,6 +86,11 @@ async function run() {
       res.send(recentQuerys);
     });
 
+    app.get("/allQuery", async (req, res) => {
+      const allQuery = await queryCollection.find().toArray();
+      res.send(allQuery);
+    });
+
     app.get(
       "/myQuery",
       verifyFireBaseToken,
