@@ -1,13 +1,25 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
+const cookieParser = require("cookie-parser");
 const port = process.env.PORT || 5000;
+
+const admin = require("firebase-admin");
+
+const serviceAccount = require("./firebase-admin-service-key.json");
+
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
 
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.9rzwgbq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -20,12 +32,43 @@ const client = new MongoClient(uri, {
   },
 });
 
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const verifyFireBaseToken = async (req, res, next) => {
+  const authHeader = req.headers?.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    console.log("decoded token", decoded);
+    req.decoded = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+};
+
+const verifyTokenEmail = (req, res, next) => {
+  const email = req.query.email;
+  if (!email || email !== req.decoded.email) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  next();
+};
+
 async function run() {
   try {
     // Get the collection from the 'prodQuery' database
     const queryCollection = client.db("prodQuery").collection("query");
 
-    4; // Connect the client to the server	(optional starting in v4.7)
+    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
     app.post("/query", async (req, res) => {
@@ -43,20 +86,25 @@ async function run() {
       res.send(recentQuerys);
     });
 
-    app.get("/myQuery", async (req, res) => {
-      const email = req.query.email;
-      const query = {};
+    app.get(
+      "/myQuery",
+      verifyFireBaseToken,
+      verifyTokenEmail,
+      async (req, res) => {
+        const email = req.query.email;
+        const query = {};
 
-      if (email) {
-        query.hr_email = email;
+        if (email) {
+          query.hr_email = email;
+        }
+
+        const cursor = queryCollection.find(query).sort({ createdAt: -1 });
+
+        const result = await cursor.toArray();
+
+        res.send(result);
       }
-
-      const cursor = queryCollection.find(query).sort({ createdAt: -1 });
-
-      const result = await cursor.toArray();
-
-      res.send(result);
-    });
+    );
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
