@@ -8,7 +8,7 @@ const admin = require("firebase-admin");
 
 const serviceAccount = require("./firebase-admin-service-key.json");
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 // middleware
@@ -89,6 +89,13 @@ async function run() {
     app.get("/allQuery", async (req, res) => {
       const allQuery = await queryCollection.find().toArray();
       res.send(allQuery);
+    });
+
+    app.get("/queryDetails/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await queryCollection.findOne(query);
+      res.send(result);
     });
 
     app.get(
