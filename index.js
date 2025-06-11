@@ -43,6 +43,21 @@ async function run() {
       res.send(recentQuerys);
     });
 
+    app.get("/myQuery", async (req, res) => {
+      const email = req.query.email;
+      const query = {};
+
+      if (email) {
+        query.hr_email = email;
+      }
+
+      const cursor = queryCollection.find(query).sort({ createdAt: -1 });
+
+      const result = await cursor.toArray();
+
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
