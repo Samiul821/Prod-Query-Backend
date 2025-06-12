@@ -47,7 +47,6 @@ const verifyFireBaseToken = async (req, res, next) => {
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
-    console.log("decoded token", decoded);
     req.decoded = decoded;
     next();
   } catch (error) {
@@ -67,7 +66,9 @@ async function run() {
   try {
     // Get the collection from the 'prodQuery' database
     const queryCollection = client.db("prodQuery").collection("query");
-    const recommendationCollection = client.db('prodQuery').collection('recommendations');
+    const recommendationCollection = client
+      .db("prodQuery")
+      .collection("recommendations");
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
@@ -119,11 +120,17 @@ async function run() {
       }
     );
 
-    app.post('/recommendations', async(req,res)=>{
+    app.post("/recommendations", async (req, res) => {
       const recommendation = req.body;
       const result = await recommendationCollection.insertOne(recommendation);
-      res.send(result)
-    })
+
+      await queryCollection.updateOne(
+        { _id: new ObjectId(recommendation.queryId) },
+        { $inc: { recommendationCount: 1 } }
+      );
+
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
