@@ -132,11 +132,31 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/recommendations', async(req,res) => {
-      const {queryId} = req.query;
-      const result = await recommendationCollection.find({queryId}).toArray();
+    app.get("/recommendations", async (req, res) => {
+      const { queryId } = req.query;
+      const result = await recommendationCollection.find({ queryId }).toArray();
       res.send(result);
-    })
+    });
+
+    app.get(
+      "/my-recommendations",
+      verifyFireBaseToken,
+      verifyTokenEmail,
+      async (req, res) => {
+        const email = req.query.email;
+
+        if (!email) {
+          return res.status(400).send({ message: "Email is required" });
+        }
+
+        const result = await recommendationCollection
+          .find({ recommenderEmail: email })
+          .sort({ timestamp: -1 })
+          .toArray();
+
+        res.send(result);
+      }
+    );
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
