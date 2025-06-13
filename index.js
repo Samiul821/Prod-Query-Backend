@@ -37,13 +37,11 @@ admin.initializeApp({
 });
 
 const verifyFireBaseToken = async (req, res, next) => {
-  const authHeader = req.headers?.authorization;
+  const token = req.cookies?.firebaseToken;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return res.status(401).send({ message: "unauthorized access" });
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
@@ -56,6 +54,8 @@ const verifyFireBaseToken = async (req, res, next) => {
 
 const verifyTokenEmail = (req, res, next) => {
   const email = req.query.email;
+  console.log(email);
+  console.log("req.decoded", req.decoded);
   if (!email || email !== req.decoded.email) {
     return res.status(403).send({ message: "forbidden access" });
   }
@@ -72,6 +72,26 @@ async function run() {
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    app.post("/sessionLogin", async (req, res) => {
+      const { idToken } = req.body;
+
+      try {
+        const decoded = await admin.auth().verifyIdToken(idToken);
+        res.cookie("firebaseToken", idToken, {
+          httpOnly: true,
+          secure: false,
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        res.send({ message: "Session cookie set" });
+      } catch (error) {
+        res.status(401).send({ message: "Invalid token" });
+      }
+    });
+
+    app.post("/logout", (req, res) => {
+      res.clearCookie("firebaseToken").send({ message: "Logged Out" });
+    });
 
     app.post("/query", async (req, res) => {
       const query = req.body;
@@ -153,6 +173,37 @@ async function run() {
           .find({ recommenderEmail: email })
           .sort({ timestamp: -1 })
           .toArray();
+
+        res.send(result);
+      }
+    );
+
+    app.delete("/my-recommendations/:id", async (req, res) => {
+      const id = req.params.id;
+      const recommendations = { _id: new ObjectId(id) };
+      const result = await recommendationCollection.deleteOne(recommendations);
+      res.send(result);
+    });
+
+    app.patch("/query/:id", async (req, res) => {
+      const queryId = req.params.id;
+      const result = await queryCollection.updateOne(
+        { _id: new ObjectId(queryId) },
+        { $inc: { recommendationCount: -1 } }
+      );
+      res.send(result);
+    });
+
+    app.get(
+      "/recommendations-for-me",
+      verifyFireBaseToken,
+      verifyTokenEmail,
+      async (req, res) => {
+        const email = req.query.email;
+
+        const query = email ? { userEmail: email } : {};
+
+        const result = await recommendationCollection.find(query).toArray();
 
         res.send(result);
       }
