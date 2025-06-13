@@ -81,8 +81,9 @@ async function run() {
         res.cookie("firebaseToken", idToken, {
           httpOnly: true,
           secure: false,
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
         });
+
         res.send({ message: "Session cookie set" });
       } catch (error) {
         res.status(401).send({ message: "Invalid token" });
@@ -139,6 +140,30 @@ async function run() {
         res.send(result);
       }
     );
+
+    app.get("/myQueryDetails/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await queryCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.put("/query/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedQuery = req.body;
+      const updateDoc = {
+        $set: updatedQuery,
+      };
+
+      const result = await queryCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
 
     app.post("/recommendations", async (req, res) => {
       const recommendation = req.body;
