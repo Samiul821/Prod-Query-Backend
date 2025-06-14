@@ -14,7 +14,7 @@ require("dotenv").config();
 // middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["https://prod-query-e68b6.web.app"],
     credentials: true,
   })
 );
