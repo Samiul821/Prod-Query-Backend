@@ -37,28 +37,31 @@ admin.initializeApp({
 });
 
 const verifyFireBaseToken = async (req, res, next) => {
-  const token = req.cookies?.firebaseToken;
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).send({ message: "unauthorized access" });
   }
+
+  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     req.decoded = decoded;
     next();
   } catch (error) {
+    console.error("Firebase Token Verify Error:", error.message);
     return res.status(401).send({ message: "unauthorized access" });
   }
 };
 
 const verifyTokenEmail = (req, res, next) => {
   const email = req.query.email;
-  console.log(email);
-  console.log("req.decoded", req.decoded);
+
   if (!email || email !== req.decoded.email) {
     return res.status(403).send({ message: "forbidden access" });
   }
+
   next();
 };
 
