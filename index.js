@@ -79,33 +79,6 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
-    app.post("/sessionLogin", async (req, res) => {
-      const { idToken } = req.body;
-
-      try {
-        const decoded = await admin.auth().verifyIdToken(idToken);
-        res.cookie("firebaseToken", idToken, {
-          httpOnly: true,
-          secure: false,
-          maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
-        });
-
-        res.send({ message: "Session cookie set" });
-      } catch (error) {
-        res.status(401).send({ message: "Invalid token" });
-      }
-    });
-
-    app.post("/logout", (req, res) => {
-      res.clearCookie("firebaseToken", {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-        path: "/",
-      });
-      res.send({ message: "Logged out" });
-    });
-
     app.post("/query", async (req, res) => {
       const query = req.body;
       const result = await queryCollection.insertOne(query);
@@ -136,7 +109,7 @@ async function run() {
     app.get(
       "/myQuery",
       verifyFireBaseToken,
-      verifyTokenEmail,
+      // verifyTokenEmail,
       async (req, res) => {
         const email = req.query.email;
         const query = {};
@@ -205,7 +178,7 @@ async function run() {
     app.get(
       "/my-recommendations",
       verifyFireBaseToken,
-      verifyTokenEmail,
+      // verifyTokenEmail,
       async (req, res) => {
         const email = req.query.email;
 
@@ -241,7 +214,7 @@ async function run() {
     app.get(
       "/recommendations-for-me",
       verifyFireBaseToken,
-      verifyTokenEmail,
+      // verifyTokenEmail,
       async (req, res) => {
         const email = req.query.email;
 
