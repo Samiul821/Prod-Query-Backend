@@ -14,7 +14,7 @@ require("dotenv").config();
 // middleware
 app.use(
   cors({
-    origin: ["https://prod-query-e68b6.web.app"],
+    origin: ["http://localhost:5173"],
     credentials: true,
   })
 );
@@ -37,28 +37,26 @@ admin.initializeApp({
 });
 
 const verifyFireBaseToken = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const token = req.cookies?.firebaseToken; 
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!token) {
     return res.status(401).send({ message: "unauthorized access" });
   }
-
-  const token = authHeader.split(" ")[1];
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     req.decoded = decoded;
     next();
   } catch (error) {
-    console.error("Firebase Token Verify Error:", error.message);
-    return res.status(401).send({ message: "unauthorized access" });
+    res.status(401).send({ message: "Invalid or expired token" });
   }
 };
 
 const verifyTokenEmail = (req, res, next) => {
   const email = req.query.email;
+  const decodedEmail = req.decoded?.email; // safety check
 
-  if (!email || email !== req.decoded.email) {
+  if (!email || !decodedEmail || email !== decodedEmail) {
     return res.status(403).send({ message: "forbidden access" });
   }
 
@@ -94,7 +92,13 @@ async function run() {
     });
 
     app.post("/logout", (req, res) => {
-      res.clearCookie("firebaseToken").send({ message: "Logged Out" });
+      res.clearCookie("firebaseToken", {
+        httpOnly: true,
+        secure: false, // যেভাবে set করেছিলে ঠিক সেভাবে দিতে হবে
+        sameSite: "lax", // তুমি যেটা use করো
+        path: "/", // এটা না দিলে default path match না করে cookie রয়ে যেতে পারে
+      });
+      res.send({ message: "Logged out" });
     });
 
     app.post("/query", async (req, res) => {
