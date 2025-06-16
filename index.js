@@ -46,9 +46,9 @@ const verifyFireBaseToken = async (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded2 = await admin.auth().verifyIdToken(token);
-    console.log("decoded token", decoded2);
-    req.decoded = decoded2;
+    const decoded = await admin.auth().verifyIdToken(token);
+    console.log("decoded token", decoded);
+    req.decoded = decoded;
     next();
   } catch (error) {
     return res.status(401).send({ message: "unauthorized access" });
