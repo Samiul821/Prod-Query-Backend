@@ -46,14 +46,16 @@ const verifyFireBaseToken = async (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    console.log("decoded token", decoded);
-    req.decoded = decoded;
+    const decoded2 = await admin.auth().verifyIdToken(token);
+    console.log("decoded token", decoded2);
+    req.decoded = decoded2;
     next();
   } catch (error) {
     return res.status(401).send({ message: "unauthorized access" });
   }
 };
+
+
 
 const verifyTokenEmail = (req, res, next) => {
   const email = req.query.email;
