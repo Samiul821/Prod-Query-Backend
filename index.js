@@ -14,7 +14,7 @@ require("dotenv").config();
 // middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["https://prod-query-e68b6.web.app"],
     credentials: true,
   })
 );
@@ -37,18 +37,21 @@ admin.initializeApp({
 });
 
 const verifyFireBaseToken = async (req, res, next) => {
-  const token = req.cookies?.firebaseToken; 
+  const authHeader = req.headers?.authorization;
 
-  if (!token) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).send({ message: "unauthorized access" });
   }
 
+  const token = authHeader.split(" ")[1];
+
   try {
     const decoded = await admin.auth().verifyIdToken(token);
+    console.log("decoded token", decoded);
     req.decoded = decoded;
     next();
   } catch (error) {
-    res.status(401).send({ message: "Invalid or expired token" });
+    return res.status(401).send({ message: "unauthorized access" });
   }
 };
 
@@ -94,9 +97,9 @@ async function run() {
     app.post("/logout", (req, res) => {
       res.clearCookie("firebaseToken", {
         httpOnly: true,
-        secure: false, // যেভাবে set করেছিলে ঠিক সেভাবে দিতে হবে
-        sameSite: "lax", // তুমি যেটা use করো
-        path: "/", // এটা না দিলে default path match না করে cookie রয়ে যেতে পারে
+        secure: false,
+        sameSite: "lax",
+        path: "/",
       });
       res.send({ message: "Logged out" });
     });
