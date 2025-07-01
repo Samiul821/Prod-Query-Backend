@@ -12,20 +12,9 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 // middleware
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://prod-query-e68b6.web.app", // তোমার frontend-এর production URL
-];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: ["http://localhost:5173"],
     credentials: true,
   })
 );
@@ -99,6 +88,22 @@ async function run() {
         .limit(6)
         .toArray();
       res.send(recentQuerys);
+    });
+
+    app.get("/highlighted-products", async (req, res) => {
+      try {
+        const highlighted = await queryCollection
+          .find()
+          .sort({ recommendationCount: -1 }) // বেশি রেকমেন্ডেড আগে
+          .limit(8) // টপ ৬ বা যত খুশি
+          .toArray();
+
+        res.send(highlighted);
+      } catch (error) {
+        res
+          .status(500)
+          .send({ message: "Failed to fetch highlighted products" });
+      }
     });
 
     app.get("/allQuery", async (req, res) => {
