@@ -55,8 +55,6 @@ const verifyFireBaseToken = async (req, res, next) => {
   }
 };
 
-
-
 const verifyTokenEmail = (req, res, next) => {
   const email = req.query.email;
   const decodedEmail = req.decoded?.email; // safety check
@@ -75,9 +73,6 @@ async function run() {
     const recommendationCollection = client
       .db("prodQuery")
       .collection("recommendations");
-
-    // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
 
     app.post("/query", async (req, res) => {
       const query = req.body;
