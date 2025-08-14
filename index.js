@@ -94,8 +94,8 @@ async function run() {
       try {
         const highlighted = await queryCollection
           .find()
-          .sort({ recommendationCount: -1 }) // বেশি রেকমেন্ডেড আগে
-          .limit(8) // টপ ৬ বা যত খুশি
+          .sort({ recommendationCount: -1 })
+          .limit(8)
           .toArray();
 
         res.send(highlighted);
